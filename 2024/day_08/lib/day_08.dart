@@ -10,14 +10,7 @@ class Position {
 
   Position({required this.x, required this.y});
 
-  bool isValid(int allowedAntennaType) {
-    if (0 <= x && x < maxX && 0 <= y && y < maxY) {
-      final bob = dot == grid[y][x] || allowedAntennaType == grid[y][x];
-      return bob;
-    }
-
-    return false;
-  }
+  bool get isValid => (0 <= x && x < maxX && 0 <= y && y < maxY);
 
   @override
   int get hashCode => Object.hash(x, y);
@@ -36,6 +29,8 @@ Map<int, List<Position>> antenas = {};
 const dot = 46; // '.'.codeUnits[0]
 
 void getData(bool useSample) {
+  antenas.clear();
+
   final lines = useSample
       ? File("data/sampleData").readAsLinesSync()
       : File("data/data").readAsLinesSync();
@@ -59,52 +54,44 @@ void getData(bool useSample) {
     }
     ++y;
   }
-
-  for (var entry in antenas.entries) {
-    final str = String.fromCharCode(entry.key);
-    print('key: $str occours ${entry.value.length} times');
-  }
 }
 
-List<Position> calcNodes(Position a, Position b) {
+bool forPart1 = true;
+List<Position> calcAntiNodes(Position a, Position b) {
   final xDiff = a.x - b.x;
   final yDiff = a.y - b.y;
 
-  final one = Position(x: a.x + xDiff, y: a.y + yDiff);
-  final two = Position(x: b.x - xDiff, y: b.y - yDiff);
+  if (forPart1) {
+    final one = Position(x: a.x + xDiff, y: a.y + yDiff);
+    final two = Position(x: b.x - xDiff, y: b.y - yDiff);
 
-  return [
-    if (one.isValid(grid[a.y][a.x])) one,
-    if (two.isValid(grid[a.y][a.x])) two
-  ];
+    return [if (one.isValid) one, if (two.isValid) two];
+  } else {
+    final toReturn = <Position>[];
+
+    Position last = a;
+
+    do {
+      toReturn.add(last);
+      last = Position(x: last.x + xDiff, y: last.y + yDiff);
+    } while (last.isValid);
+
+    last = b;
+
+    do {
+      toReturn.add(last);
+      last = Position(x: last.x - xDiff, y: last.y - yDiff);
+    } while (last.isValid);
+
+    return toReturn;
+  }
 }
 
 int part1({required bool useSample}) {
-  getData(useSample);
-
-  int total = 0;
-
-  for (var antenaType in antenas.values) {
-    final nodes = [...antenaType];
-
-    while (nodes.length > 1) {
-      final aNode = nodes.removeLast(); // more efficient than removeAt(0)
-
-      for (var antena in nodes) {
-        final nodes = calcNodes(aNode, antena);
-        total += nodes.length;
-      }
-    }
-  }
-
-  return total;
-}
-
-int part2({required bool useSample}) {
+  forPart1 = true;
   getData(useSample);
 
   final antiNodes = <Position>{};
-  int total = 0;
 
   for (var antenaType in antenas.values) {
     final nodes = [...antenaType];
@@ -113,12 +100,35 @@ int part2({required bool useSample}) {
       final aNode = nodes.removeLast(); // more efficient than removeAt(0)
 
       for (var antena in nodes) {
-        final nodes = calcNodes(aNode, antena);
-        total += nodes.length;
-        antiNodes.addAll(nodes);
+        final returnedNodes = calcAntiNodes(aNode, antena);
+
+        antiNodes.addAll(returnedNodes);
       }
     }
   }
 
-  return total; //antiNodes.length;
+  return antiNodes.length;
+}
+
+int part2({required bool useSample}) {
+  forPart1 = false;
+  getData(useSample);
+
+  final antiNodes = <Position>{};
+
+  for (var antenaType in antenas.values) {
+    final nodes = [...antenaType];
+
+    while (nodes.length > 1) {
+      final aNode = nodes.removeLast(); // more efficient than removeAt(0)
+
+      for (var antena in nodes) {
+        final returnedNodes = calcAntiNodes(aNode, antena);
+
+        antiNodes.addAll(returnedNodes);
+      }
+    }
+  }
+
+  return antiNodes.length;
 }
