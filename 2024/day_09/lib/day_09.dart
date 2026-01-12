@@ -37,9 +37,8 @@ bool findNonEmptyMemory() {
   return 0 <= reverse;
 }
 
-bool movePastCurrentId() {
+bool movePastCurrentId(int currentId) {
   if (memoryMap[reverse] != null) {
-    int currentId = memoryMap[reverse]!;
     while (0 <= reverse && memoryMap[reverse] == currentId) {
       --reverse;
     }
@@ -71,7 +70,7 @@ int checksum() {
   for (var i = 0; i < memoryMap.length && i < 10000; i++) {
     if (null != memoryMap[i]) {
       total += i * memoryMap[i]!;
-      print('$i\t${memoryMap[i]}\t$total');
+      // print('$i\t${memoryMap[i]}\t$total');
     }
   }
 
@@ -97,7 +96,7 @@ int part1({required bool useSample}) {
   return checksum();
 }
 
-int getSpaceNeeded() {
+({int spaceNeeded, int currentId}) getSpaceNeeded() {
   int reverseCopy = reverse;
 
   int currentId = memoryMap[reverseCopy]!;
@@ -109,7 +108,7 @@ int getSpaceNeeded() {
     ++spaceNeeded;
   }
 
-  return spaceNeeded;
+  return (spaceNeeded: spaceNeeded, currentId: currentId);
 }
 
 ({int spaceAvailable, int pos}) findAvailableSpace(int requiredSpace) {
@@ -155,16 +154,17 @@ int part2({required bool useSample}) {
 
   reverse = memoryMap.length - 1;
   while (loopCount < 100 && findNonEmptyMemory() && 0 < reverse) {
-    int spaceNeeded = getSpaceNeeded();
-    final result = findAvailableSpace(spaceNeeded);
+    final fromSpaceCheck = getSpaceNeeded();
+    final result = findAvailableSpace(fromSpaceCheck.spaceNeeded);
 
-    if (result.pos < reverse && result.spaceAvailable == spaceNeeded) {
+    if (result.pos < reverse &&
+        result.spaceAvailable == fromSpaceCheck.spaceNeeded) {
       // print(spaceNeeded);
       // print(result);
-      swapData(result.pos, reverse, spaceNeeded);
+      swapData(result.pos, reverse, fromSpaceCheck.spaceNeeded);
       // writeOutMemory();
     } else {
-      movePastCurrentId();
+      movePastCurrentId(fromSpaceCheck.currentId);
     }
 
     ++loopCount;
